@@ -1,0 +1,393 @@
+
+      let questions = [];
+      let currentIndex = 0;
+    let score = 0;
+  let wrongAnswers = [];
+  let answeredCount = 0;
+      const userId = localStorage.getItem("userId") || "";
+
+      // Fisher-Yates shuffle
+      function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      // Timer management: supports per-question or whole-quiz timer
+  let totalTimer = null;
+  let totalTimeLeft = 0;
+  let perQuestionTimer = null;
+  let quizStartTime = null;
+  function startTimer() {
+        // read mode and values from localStorage
+  const mode = localStorage.getItem('timerMode') || 'whole';
+        const perq = parseInt(localStorage.getItem('perQuestionTime') || '10', 10);
+        const whole = parseInt(localStorage.getItem('wholeTime') || '300', 10);
+
+  // debug info
+  console.debug('startTimer', { mode, perq, whole, totalTimeLeft });
+
+  // clear any existing per-question timer
+  stopTimer();
+
+        if (mode === 'whole') {
+          // start/continue whole-quiz timer (only one interval)
+          if (!totalTimeLeft) totalTimeLeft = whole;
+          document.getElementById("timer-display").innerText = `Thời gian còn lại: ${totalTimeLeft}s`;
+          if (!totalTimer) {
+            totalTimer = setInterval(() => {
+              totalTimeLeft--;
+              document.getElementById("timer-display").innerText = `Thời gian còn lại: ${totalTimeLeft}s`;
+              if (totalTimeLeft <= 0) {
+                clearInterval(totalTimer);
+                totalTimer = null;
+                showToast('Hết giờ của cả bài!', 'info');
+                updateHighScore();
+              }
+            }, 1000);
+          }
+        } else {
+          // per-question timer (reset for each question)
+          let timeLeft = perq;
+          document.getElementById("timer-display").innerText = `Thời gian: ${timeLeft}s`;
+          perQuestionTimer = setInterval(() => {
+            timeLeft--;
+            document.getElementById("timer-display").innerText = `Thời gian: ${timeLeft}s`;
+            if (timeLeft <= 0) {
+              clearInterval(perQuestionTimer);
+              perQuestionTimer = null;
+              autoNextQuestion();
+            }
+          }, 1000);
+        }
+      }
+
+      // stop only the per-question timer
+      function stopTimer() {
+        if (perQuestionTimer) { clearInterval(perQuestionTimer); perQuestionTimer = null; }
+      }
+
+      // stop all timers (used when finishing quiz)
+      function stopAllTimers() {
+        if (perQuestionTimer) { clearInterval(perQuestionTimer); perQuestionTimer = null; }
+        if (totalTimer) { clearInterval(totalTimer); totalTimer = null; }
+      }
+
+      function loadQuiz() {
+        fetch(`/api/questions`)
+          .then((res) => res.json())
+          .then((data) => {
+            const requested = parseInt(localStorage.getItem('numQuestions') || '0', 10) || 0;
+            if (!Array.isArray(data) || data.length === 0) {
+              showToast("Không có câu hỏi nào để làm quiz!", 'error');
+              setTimeout(() => { window.location.href = '/home.html'; }, 900);
+              return;
+            }
+            if (requested > data.length) {
+              showToast("lựa chọn không hợp lệ mời chọn lại số lượng câu hỏi", 'error');
+              setTimeout(() => { window.location.href = '/home.html'; }, 900);
+              return;
+            }
+            // take requested number or all
+            // shuffle the full dataset first so we pick a random subset
+            if (requested && requested > 0) {
+              shuffleArray(data);
+              questions = data.slice(0, requested);
+            } else {
+              questions = data.slice();
+              shuffleArray(questions);
+            }
+
+            // Prepare shuffled options per question and set correctAnswer to match shuffled option value
+            questions.forEach((q) => {
+              const opts = [];
+              if (q.type === 'true_false') {
+                opts.push({ value: 'true', text: 'Đúng', isCorrect: String(q.correctAnswer) === 'true', displayLabel: '' });
+                opts.push({ value: 'false', text: 'Sai', isCorrect: String(q.correctAnswer) === 'false', displayLabel: '' });
+              } else {
+                for (let i = 0; i < (q.options || []).length; i++) {
+                  const label = String.fromCharCode(65 + i);
+                  opts.push({ value: label, text: q.options[i], isCorrect: label === q.correctAnswer, displayLabel: label });
+                }
+              }
+              shuffleArray(opts);
+              const correctOpt = opts.find(o => o.isCorrect);
+              if (correctOpt) q.correctAnswer = correctOpt.value;
+              q._shuffledOptions = opts;
+            });
+
+            // reset total timer counter for a fresh quiz
+            totalTimeLeft = 0;
+            // set quiz start time
+            quizStartTime = Date.now();
+            showQuestion();
+          })
+          .catch((err) => {
+            console.error("Error loading quiz:", err);
+            showToast("Có lỗi khi tải quiz: " + err.message, "error");
+          });
+      }
+
+      function showQuestion() {
+        stopTimer();
+        if (currentIndex >= questions.length) {
+          updateHighScore();
+          return;
+        }
+
+        const q = questions[currentIndex];
+        document.getElementById("question-title").innerText = `Câu ${
+          currentIndex + 1
+        }/${questions.length}`;
+        document.getElementById("question-text").innerText = q.questionText;
+
+        // Render from precomputed shuffled options
+        let html = "";
+        if (!Array.isArray(q._shuffledOptions)) q._shuffledOptions = [];
+        for (let i = 0; i < q._shuffledOptions.length; i++) {
+          const opt = q._shuffledOptions[i];
+          html += `
+            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="${opt.isCorrect}">
+              <input type="radio" name="answer" value="${opt.value}" class="h-4 w-4 text-blue-600" />
+              ${opt.displayLabel ? opt.displayLabel + ': ' : ''}${opt.text}
+            </label>
+          `;
+        }
+        document.getElementById("question-options").innerHTML = html;
+        const nextBtn = document.getElementById("next-btn");
+        // disable next until an answer is chosen
+        nextBtn.disabled = true;
+        nextBtn.classList.add('opacity-60','cursor-not-allowed');
+
+        document.getElementById("next-btn").innerText =
+          currentIndex === questions.length - 1 ? "Hoàn thành" : "Tiếp theo";
+        // wire change handlers for radio options to enable next button
+        const radios = document.querySelectorAll('input[name="answer"]');
+        radios.forEach(r => r.addEventListener('change', () => {
+          nextBtn.disabled = false;
+          nextBtn.classList.remove('opacity-60','cursor-not-allowed');
+        }));
+
+        startTimer();
+      }
+
+      function nextQuestion() {
+        stopTimer();
+        checkAnswer();
+        currentIndex++;
+        setTimeout(() => {
+          showQuestion();
+        }, 1000);
+      }
+
+      function autoNextQuestion() {
+        stopTimer();
+        showToast("Hết giờ! Tự chuyển câu tiếp theo.", "info");
+        checkAnswer();
+        currentIndex++;
+        setTimeout(() => {
+          showQuestion();
+        }, 1000);
+      }
+
+      function checkAnswer() {
+        const selected = document.querySelector('input[name="answer"]:checked');
+        const q = questions[currentIndex];
+        const correctLabel = q.correctAnswer;
+        const selectedValue = selected ? selected.value : null;
+
+    // Play sounds if enabled
+    const soundEnabled = localStorage.getItem("soundEnabled") === "true";
+    const soundCorrect = document.getElementById("sound-correct");
+    const soundWrong = document.getElementById("sound-wrong");
+
+        if (selectedValue === correctLabel) {
+          score += 10;
+          document.getElementById("score-value").innerText = score;
+          if (soundEnabled) {
+            try { soundCorrect.currentTime = 0; soundCorrect.play(); } catch (e) { /* ignore */ }
+          }
+          showToast("Đúng! Bạn được 10 điểm.", "success");
+          if (selected) answeredCount++;
+        } else {
+          if (soundEnabled) {
+            try { soundWrong.currentTime = 0; soundWrong.play(); } catch (e) { /* ignore */ }
+          }
+          showToast(`Đáp án đúng là ${correctLabel}.`, "error");
+          // record wrong answer info: question text, selected, correct
+          wrongAnswers.push({
+            question: q.questionText,
+            selected: selectedValue,
+            correct: correctLabel,
+            options: q._shuffledOptions || []
+          });
+          if (selected) answeredCount++;
+        }
+
+        // Tô xanh đáp án đúng
+        const options = document.querySelectorAll("#question-options label");
+        options.forEach((label) => {
+          if (label.dataset.correct === "true") {
+            label.classList.add("correct-answer");
+          }
+        });
+      }
+
+      function updateHighScore() {
+        // stop timers while showing results
+        stopAllTimers();
+
+        // build summary
+        const totalQuestions = questions.length;
+        const correctCount = Math.floor(score / 10);
+  const timeMode = localStorage.getItem('timerMode') || 'whole';
+  let elapsed = 0;
+  let totalAllowed = 0;
+  // Coerce to numbers safely with sensible defaults
+  const wholeSec = parseInt(localStorage.getItem('wholeTime') || '300', 10) || 300;
+  const perqSec = parseInt(localStorage.getItem('perQuestionTime') || '10', 10) || 10;
+
+  if (timeMode === 'whole') {
+    totalAllowed = wholeSec || 300;
+    if (quizStartTime) {
+      elapsed = Math.floor((Date.now() - quizStartTime) / 1000);
+    } else if (typeof totalTimeLeft === 'number') {
+      elapsed = totalAllowed - (Number(totalTimeLeft) || 0);
+    } else {
+      elapsed = 0;
+    }
+  } else {
+    totalAllowed = perqSec * questions.length || 0;
+    elapsed = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 0;
+  }
+
+  // clamp elapsed to sensible bounds
+  if (isNaN(elapsed) || elapsed < 0) elapsed = 0;
+  if (isNaN(totalAllowed) || totalAllowed < 0) totalAllowed = 0;
+  if (totalAllowed > 0 && elapsed > totalAllowed) elapsed = totalAllowed;
+
+  function fmt(s) {
+    if (typeof s !== 'number' || isNaN(s)) return 'N/A';
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
+  const timeDisplay = `${fmt(elapsed)} / ${fmt(totalAllowed)}`;
+
+        const summaryEl = document.getElementById('results-summary');
+        summaryEl.innerHTML = `
+          <p><strong>Thời gian làm bài:</strong> ${timeDisplay}</p>
+          <p><strong>Đúng:</strong> ${correctCount}/${totalQuestions}</p>
+          <p><strong>Điểm:</strong> ${score}</p>
+        `;
+
+        const wrongEl = document.getElementById('results-wrongs');
+        if (answeredCount === 0) {
+          wrongEl.innerHTML = '<p>Bạn chưa trả lời câu nào.</p>';
+        } else if (wrongAnswers.length === 0) {
+          wrongEl.innerHTML = '<p>Tuyệt vời! Không có câu sai.</p>';
+        } else {
+          let html = '';
+          wrongAnswers.forEach((w, idx) => {
+            html += `<div style="padding:8px;border-bottom:1px solid #eee;"><strong>Câu ${idx+1}:</strong> ${w.question}<br/><strong>Đáp án bạn chọn:</strong> ${w.selected} <strong>Đáp án đúng:</strong> ${w.correct}`;
+            if (Array.isArray(w.options) && w.options.length) {
+              html += '<div style="margin-top:4px;font-size:13px;color:#444">Các lựa chọn: ';
+              html += w.options.map(o => `${o.displayLabel ? o.displayLabel+':':''}${o.text}`).join(' | ');
+              html += '</div>';
+            }
+            html += '</div>';
+          });
+          wrongEl.innerHTML = html;
+        }
+
+        // show modal
+        const modal = document.getElementById('results-modal');
+        modal.style.display = 'flex';
+
+        document.getElementById('results-confirm').onclick = () => {
+          // update high score on server if needed, then redirect
+          fetch(`/api/profile/${userId}`)
+            .then((res) => res.json())
+            .then((user) => {
+              if (score > (user.highScore || 0)) {
+                return fetch(`/api/profile/${userId}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ highScore: score }),
+                });
+              }
+            })
+            .finally(() => {
+              modal.style.display = 'none';
+              window.location.href = '/home.html';
+            });
+        };
+      }
+
+      // Toast helper
+      function showToast(message, type = "info", timeout = 2000) {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        toast.className = "toast-item";
+        toast.style.minWidth = "220px";
+        toast.style.marginBottom = "8px";
+        toast.style.padding = "10px 14px";
+        toast.style.borderRadius = "8px";
+        toast.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)";
+        toast.style.color = "#fff";
+        toast.style.fontSize = "14px";
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 200ms, transform 200ms";
+        toast.style.transform = "translateY(-6px)";
+
+        if (type === "success") toast.style.background = "#16a34a"; // green
+        else if (type === "error") toast.style.background = "#dc2626"; // red
+        else toast.style.background = "#2563eb"; // blue
+
+        toast.innerText = message;
+        container.appendChild(toast);
+
+        // animate in
+        requestAnimationFrame(() => {
+          toast.style.opacity = "1";
+          toast.style.transform = "translateY(0)";
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(-6px)";
+          setTimeout(() => container.removeChild(toast), 220);
+        }, timeout);
+      }
+
+      window.onload = loadQuiz;
+
+      // Initialize background music in quiz: honor the same storage key and sync across tabs/pages
+      (function initBgInQuiz() {
+        const BGM_KEY = 'bgMusicEnabled';
+        const bgAudioEl = document.getElementById('bg-music-audio');
+        if (!bgAudioEl) return;
+        const enabled = localStorage.getItem(BGM_KEY) === 'true';
+        if (enabled) {
+          bgAudioEl.play().catch(() => {
+            // autoplay blocked; nothing to do (user must enable interactively)
+          });
+        }
+        // listen for storage changes from other pages (home)
+        window.addEventListener('storage', (ev) => {
+          if (ev.key === BGM_KEY) {
+            const val = ev.newValue === 'true';
+            if (val) {
+              bgAudioEl.play().catch(() => {});
+            } else {
+              bgAudioEl.pause();
+              bgAudioEl.currentTime = 0;
+            }
+          }
+        });
+      })();
+    

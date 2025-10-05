@@ -41,7 +41,7 @@
         id="question-title"
         class="text-xl font-semibold text-gray-800 mb-4 text-center"
       ></h3>
-      <div id="timer" class="timer">Thời gian: 10s</div>
+  <div id="timer-display" class="timer">Thời gian: 10s</div>
       <div id="question-text" class="text-gray-700 mb-6"></div>
       <div class="options space-y-3" id="question-options"></div>
       <div class="flex justify-center gap-3 mt-6">
@@ -63,31 +63,91 @@
 
     <!-- Toast container -->
     <div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:9999;"></div>
+    <!-- Results modal -->
+    <div id="results-modal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:10000;">
+      <div id="results-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+      <div style="position:relative;background:#fff;border-radius:12px;padding:18px;max-width:720px;width:90%;z-index:10001;">
+        <h3 style="margin-top:0;margin-bottom:8px;">Kết quả Quiz</h3>
+        <div id="results-summary" style="margin-bottom:12px; color:#333"></div>
+        <div id="results-wrongs" style="max-height:260px;overflow:auto;margin-bottom:12px;"></div>
+        <div style="text-align:right;"><button id="results-confirm" style="background:#16a34a;color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;">Xác nhận</button></div>
+      </div>
+    </div>
 
     <script>
       let questions = [];
       let currentIndex = 0;
-      let score = 0;
-      let timer;
+    let score = 0;
+  let wrongAnswers = [];
       const userId = localStorage.getItem("userId") || "";
 
-      function startTimer() {
-        let timeLeft = 10;
-        document.getElementById("timer").innerText = `Thời gian: ${timeLeft}s`;
-        timer = setInterval(() => {
-          timeLeft--;
-          document.getElementById(
-            "timer"
-          ).innerText = `Thời gian: ${timeLeft}s`;
-          if (timeLeft <= 0) {
-            clearInterval(timer);
-            autoNextQuestion();
-          }
-        }, 1000);
+      // Fisher-Yates shuffle
+      function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
       }
 
+      // Timer management: supports per-question or whole-quiz timer
+  let totalTimer = null;
+  let totalTimeLeft = 0;
+  let perQuestionTimer = null;
+  let quizStartTime = null;
+  function startTimer() {
+        // read mode and values from localStorage
+  const mode = localStorage.getItem('timerMode') || 'whole';
+        const perq = parseInt(localStorage.getItem('perQuestionTime') || '10', 10);
+        const whole = parseInt(localStorage.getItem('wholeTime') || '300', 10);
+
+  // debug info
+  console.debug('startTimer', { mode, perq, whole, totalTimeLeft });
+
+  // clear any existing per-question timer
+  stopTimer();
+
+        if (mode === 'whole') {
+          // start/continue whole-quiz timer (only one interval)
+          if (!totalTimeLeft) totalTimeLeft = whole;
+          document.getElementById("timer-display").innerText = `Thời gian còn lại: ${totalTimeLeft}s`;
+          if (!totalTimer) {
+            totalTimer = setInterval(() => {
+              totalTimeLeft--;
+              document.getElementById("timer-display").innerText = `Thời gian còn lại: ${totalTimeLeft}s`;
+              if (totalTimeLeft <= 0) {
+                clearInterval(totalTimer);
+                totalTimer = null;
+                showToast('Hết giờ của cả bài!', 'info');
+                updateHighScore();
+              }
+            }, 1000);
+          }
+        } else {
+          // per-question timer (reset for each question)
+          let timeLeft = perq;
+          document.getElementById("timer-display").innerText = `Thời gian: ${timeLeft}s`;
+          perQuestionTimer = setInterval(() => {
+            timeLeft--;
+            document.getElementById("timer-display").innerText = `Thời gian: ${timeLeft}s`;
+            if (timeLeft <= 0) {
+              clearInterval(perQuestionTimer);
+              perQuestionTimer = null;
+              autoNextQuestion();
+            }
+          }, 1000);
+        }
+      }
+
+      // stop only the per-question timer
       function stopTimer() {
-        clearInterval(timer);
+        if (perQuestionTimer) { clearInterval(perQuestionTimer); perQuestionTimer = null; }
+      }
+
+      // stop all timers (used when finishing quiz)
+      function stopAllTimers() {
+        if (perQuestionTimer) { clearInterval(perQuestionTimer); perQuestionTimer = null; }
+        if (totalTimer) { clearInterval(totalTimer); totalTimer = null; }
       }
 
       function loadQuiz() {
@@ -105,7 +165,38 @@
               setTimeout(() => { window.location.href = '/home.html'; }, 900);
               return;
             }
-            questions = requested && requested > 0 ? data.slice(0, requested) : data;
+            // take requested number or all
+            // shuffle the full dataset first so we pick a random subset
+            if (requested && requested > 0) {
+              shuffleArray(data);
+              questions = data.slice(0, requested);
+            } else {
+              questions = data.slice();
+              shuffleArray(questions);
+            }
+
+            // Prepare shuffled options per question and set correctAnswer to match shuffled option value
+            questions.forEach((q) => {
+              const opts = [];
+              if (q.type === 'true_false') {
+                opts.push({ value: 'true', text: 'Đúng', isCorrect: String(q.correctAnswer) === 'true', displayLabel: '' });
+                opts.push({ value: 'false', text: 'Sai', isCorrect: String(q.correctAnswer) === 'false', displayLabel: '' });
+              } else {
+                for (let i = 0; i < (q.options || []).length; i++) {
+                  const label = String.fromCharCode(65 + i);
+                  opts.push({ value: label, text: q.options[i], isCorrect: label === q.correctAnswer, displayLabel: label });
+                }
+              }
+              shuffleArray(opts);
+              const correctOpt = opts.find(o => o.isCorrect);
+              if (correctOpt) q.correctAnswer = correctOpt.value;
+              q._shuffledOptions = opts;
+            });
+
+            // reset total timer counter for a fresh quiz
+            totalTimeLeft = 0;
+            // set quiz start time
+            quizStartTime = Date.now();
             showQuestion();
           })
           .catch((err) => {
@@ -127,32 +218,33 @@
         }/${questions.length}`;
         document.getElementById("question-text").innerText = q.questionText;
 
+        // Render from precomputed shuffled options
         let html = "";
-        if (q.type === "true_false") {
+        if (!Array.isArray(q._shuffledOptions)) q._shuffledOptions = [];
+        for (let i = 0; i < q._shuffledOptions.length; i++) {
+          const opt = q._shuffledOptions[i];
           html += `
-            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="true">
-              <input type="radio" name="answer" value="true" class="h-4 w-4 text-blue-600" /> Đúng
-            </label>
-            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="false">
-              <input type="radio" name="answer" value="false" class="h-4 w-4 text-blue-600" /> Sai
-            </label>
-        `;
-        } else {
-          for (let i = 0; i < q.options.length; i++) {
-            const optLabel = String.fromCharCode(65 + i);
-            html += `
-            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="${
-              optLabel === q.correctAnswer
-            }">
-              <input type="radio" name="answer" value="${optLabel}" class="h-4 w-4 text-blue-600" />
-              ${optLabel}: ${q.options[i]}
+            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="${opt.isCorrect}">
+              <input type="radio" name="answer" value="${opt.value}" class="h-4 w-4 text-blue-600" />
+              ${opt.displayLabel ? opt.displayLabel + ': ' : ''}${opt.text}
             </label>
           `;
-          }
         }
         document.getElementById("question-options").innerHTML = html;
+        const nextBtn = document.getElementById("next-btn");
+        // disable next until an answer is chosen
+        nextBtn.disabled = true;
+        nextBtn.classList.add('opacity-60','cursor-not-allowed');
+
         document.getElementById("next-btn").innerText =
           currentIndex === questions.length - 1 ? "Hoàn thành" : "Tiếp theo";
+        // wire change handlers for radio options to enable next button
+        const radios = document.querySelectorAll('input[name="answer"]');
+        radios.forEach(r => r.addEventListener('change', () => {
+          nextBtn.disabled = false;
+          nextBtn.classList.remove('opacity-60','cursor-not-allowed');
+        }));
+
         startTimer();
       }
 
@@ -160,7 +252,9 @@
         stopTimer();
         checkAnswer();
         currentIndex++;
-        setTimeout(showQuestion, 1000);
+        setTimeout(() => {
+          showQuestion();
+        }, 1000);
       }
 
       function autoNextQuestion() {
@@ -168,7 +262,9 @@
         showToast("Hết giờ! Tự chuyển câu tiếp theo.", "info");
         checkAnswer();
         currentIndex++;
-        setTimeout(showQuestion, 1000);
+        setTimeout(() => {
+          showQuestion();
+        }, 1000);
       }
 
       function checkAnswer() {
@@ -193,7 +289,14 @@
           if (soundEnabled) {
             try { soundWrong.currentTime = 0; soundWrong.play(); } catch (e) { /* ignore */ }
           }
-          showToast(`Sai! Đáp án đúng là ${correctLabel}.`, "error");
+          showToast(`Đáp án đúng là ${correctLabel}.`, "error");
+          // record wrong answer info: question text, selected, correct
+          wrongAnswers.push({
+            question: q.questionText,
+            selected: selectedValue,
+            correct: correctLabel,
+            options: q._shuffledOptions || []
+          });
         }
 
         // Tô xanh đáp án đúng
@@ -206,22 +309,78 @@
       }
 
       function updateHighScore() {
-        fetch(`/api/profile/${userId}`)
-          .then((res) => res.json())
-          .then((user) => {
-            if (score > (user.highScore || 0)) {
-              return fetch(`/api/profile/${userId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ highScore: score }),
-              });
+        // stop timers while showing results
+        stopAllTimers();
+
+        // build summary
+        const totalQuestions = questions.length;
+        const correctCount = Math.floor(score / 10);
+  const timeMode = localStorage.getItem('timerMode') || 'whole';
+  let elapsed = 0;
+  let totalAllowed = 0;
+  if (timeMode === 'whole') {
+    totalAllowed = parseInt(localStorage.getItem('wholeTime')||'0',10);
+    elapsed = totalAllowed - totalTimeLeft;
+  } else {
+    totalAllowed = parseInt(localStorage.getItem('perQuestionTime')||'0',10) * questions.length || 0;
+    elapsed = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 0;
+  }
+
+  function fmt(s) {
+    if (typeof s !== 'number' || isNaN(s)) return 'N/A';
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
+  const timeDisplay = `${fmt(elapsed)} / ${fmt(totalAllowed)}`;
+
+        const summaryEl = document.getElementById('results-summary');
+        summaryEl.innerHTML = `
+          <p><strong>Thời gian làm bài:</strong> ${timeDisplay}</p>
+          <p><strong>Đúng:</strong> ${correctCount}/${totalQuestions}</p>
+          <p><strong>Điểm:</strong> ${score}</p>
+        `;
+
+        const wrongEl = document.getElementById('results-wrongs');
+        if (wrongAnswers.length === 0) {
+          wrongEl.innerHTML = '<p>Tuyệt vời! Không có câu sai.</p>';
+        } else {
+          let html = '';
+          wrongAnswers.forEach((w, idx) => {
+            html += `<div style="padding:8px;border-bottom:1px solid #eee;"><strong>Câu ${idx+1}:</strong> ${w.question}<br/><strong>Đáp án bạn chọn:</strong> ${w.selected} <strong>Đáp án đúng:</strong> ${w.correct}`;
+            if (Array.isArray(w.options) && w.options.length) {
+              html += '<div style="margin-top:4px;font-size:13px;color:#444">Các lựa chọn: ';
+              html += w.options.map(o => `${o.displayLabel ? o.displayLabel+':':''}${o.text}`).join(' | ');
+              html += '</div>';
             }
-          })
-          .finally(() => {
-            // show toast then redirect after short delay so user can see message
-            showToast(`Hoàn thành quiz! Tổng điểm: ${score}`, "success");
-            setTimeout(() => { window.location.href = "/home.html"; }, 1200);
+            html += '</div>';
           });
+          wrongEl.innerHTML = html;
+        }
+
+        // show modal
+        const modal = document.getElementById('results-modal');
+        modal.style.display = 'flex';
+
+        document.getElementById('results-confirm').onclick = () => {
+          // update high score on server if needed, then redirect
+          fetch(`/api/profile/${userId}`)
+            .then((res) => res.json())
+            .then((user) => {
+              if (score > (user.highScore || 0)) {
+                return fetch(`/api/profile/${userId}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ highScore: score }),
+                });
+              }
+            })
+            .finally(() => {
+              modal.style.display = 'none';
+              window.location.href = '/home.html';
+            });
+        };
       }
 
       // Toast helper

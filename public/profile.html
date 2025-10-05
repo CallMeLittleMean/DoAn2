@@ -122,6 +122,34 @@
     </div>
 
     <script>
+      // small toast helper for non-blocking messages
+      function showToast(message, type = 'info', timeout = 1800) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'toast-container';
+          container.style.position = 'fixed';
+          container.style.top = '14px';
+          container.style.right = '14px';
+          container.style.zIndex = 9999;
+          document.body.appendChild(container);
+        }
+        const t = document.createElement('div');
+        t.innerText = message;
+        t.style.padding = '8px 12px';
+        t.style.marginBottom = '8px';
+        t.style.borderRadius = '8px';
+        t.style.color = '#fff';
+        t.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 160ms, transform 160ms';
+        if (type === 'success') t.style.background = '#16a34a';
+        else if (type === 'error') t.style.background = '#dc2626';
+        else t.style.background = '#2563eb';
+        container.appendChild(t);
+        requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 180); }, timeout);
+      }
       const userId = localStorage.getItem("userId");
 
       if (!userId) {
@@ -175,9 +203,9 @@
         })
           .then((res) => res.json())
           .then(() => {
-            alert("Cập nhật hồ sơ thành công!");
-            window.location.href = "/home.html";
-          })
+              showToast('Cập nhật hồ sơ thành công!', 'success');
+              setTimeout(() => { window.location.href = '/home.html'; }, 700);
+            })
           .catch((err) => {
             console.error("Error saving profile:", err);
           });

@@ -85,7 +85,25 @@
       <input type="text" id="username" placeholder="Tên đăng nhập" required />
       <input type="password" id="password" placeholder="Mật khẩu" required />
       <button onclick="login()">Đăng nhập</button>
-      <button onclick="register()">Đăng ký</button>
+      <button onclick="openRegisterModal()">Đăng ký</button>
+    </div>
+
+    <!-- Register modal -->
+    <div id="register-modal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:10000;">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
+      <div style="position:relative;background:white;padding:20px;border-radius:10px;width:320px;z-index:10001;">
+        <h3 style="margin-top:0">Đăng ký tài khoản</h3>
+  <div id="reg-error" class="error" style="text-align:left"></div>
+  <label for="reg-username" style="display:block;text-align:left;font-weight:600;margin-top:6px;">Tên đăng nhập</label>
+  <input id="reg-username" type="text" placeholder="Tên đăng nhập" />
+  <label for="reg-password" style="display:block;text-align:left;font-weight:600;margin-top:6px;">Mật khẩu</label>
+  <input id="reg-password" type="password" placeholder="Mật khẩu" />
+  <label for="reg-password2" style="display:block;text-align:left;font-weight:600;margin-top:6px;">Xác nhận mật khẩu</label>
+  <div id="reg-confirm-error" style="color:red;font-size:13px;margin-bottom:6px;display:none;"></div>
+  <input id="reg-password2" type="password" placeholder="Xác nhận mật khẩu" />
+        <button id="reg-submit" disabled style="margin-top:10px;background:#9ca3af;">Đăng ký</button>
+        <button onclick="closeRegisterModal()" style="margin-top:8px;background:#ef4444;">Hủy</button>
+      </div>
     </div>
 
     <!-- Toast container -->
@@ -94,10 +112,97 @@
     <script>
       document.addEventListener("keydown", function (event) {
           if (event.key === "Enter") {
+            // If register modal open, try to submit registration (if valid)
+            const modal = document.getElementById('register-modal');
+            if (modal && modal.style.display === 'flex') {
+              event.preventDefault();
+              const submit = document.getElementById('reg-submit');
+              if (submit && !submit.disabled) {
+                submit.click();
+              }
+              return;
+            }
             event.preventDefault();
             login();
           }
         });
+
+      function openRegisterModal() {
+        document.getElementById('register-modal').style.display = 'flex';
+        document.getElementById('reg-error').innerText = '';
+        document.getElementById('reg-username').value = '';
+        document.getElementById('reg-password').value = '';
+        document.getElementById('reg-password2').value = '';
+        document.getElementById('reg-submit').disabled = true;
+        document.getElementById('reg-submit').style.background = '#9ca3af';
+      }
+
+      function closeRegisterModal() {
+        document.getElementById('register-modal').style.display = 'none';
+      }
+
+      // validation for register modal
+      function validateRegisterFields() {
+        const u = document.getElementById('reg-username').value.trim();
+        const p = document.getElementById('reg-password').value;
+        const p2 = document.getElementById('reg-password2').value;
+        const submit = document.getElementById('reg-submit');
+        const err = document.getElementById('reg-error');
+        const confirmErr = document.getElementById('reg-confirm-error');
+        err.innerText = '';
+        confirmErr.style.display = 'none';
+        confirmErr.innerText = '';
+        if (!u || !p || !p2) {
+          submit.disabled = true;
+          submit.style.background = '#9ca3af';
+          return false;
+        }
+        if (p !== p2) {
+          confirmErr.style.display = 'block';
+          confirmErr.innerText = 'Mật khẩu xác nhận không khớp';
+          submit.disabled = true;
+          submit.style.background = '#9ca3af';
+          return false;
+        }
+        // minimum password length
+        if (p.length < 4) {
+          err.innerText = 'Mật khẩu phải có ít nhất 4 ký tự';
+          submit.disabled = true;
+          submit.style.background = '#9ca3af';
+          return false;
+        }
+        submit.disabled = false;
+        submit.style.background = '#4caf50';
+        return true;
+      }
+
+      document.getElementById('reg-username').addEventListener('input', validateRegisterFields);
+      document.getElementById('reg-password').addEventListener('input', validateRegisterFields);
+      document.getElementById('reg-password2').addEventListener('input', validateRegisterFields);
+
+      document.getElementById('reg-submit').addEventListener('click', async () => {
+        if (!validateRegisterFields()) return;
+        const username = document.getElementById('reg-username').value.trim();
+        const password = document.getElementById('reg-password').value;
+        try {
+          const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showToast('Đăng ký thành công, mời bạn đăng nhập', 'success');
+            closeRegisterModal();
+          } else {
+            document.getElementById('reg-error').innerText = data.error || 'Đăng ký thất bại';
+            showToast(data.error || 'Đăng ký thất bại', 'error');
+          }
+        } catch (err) {
+          document.getElementById('reg-error').innerText = 'Lỗi mạng';
+          showToast('Lỗi mạng khi đăng ký', 'error');
+        }
+      });
       async function login() {
         const username = document.getElementById("username").value.trim();
         const password = document.getElementById("password").value.trim();
@@ -122,6 +227,8 @@
           localStorage.setItem("userId", data.userId);
           // ensure sound is OFF by default when logging in
           localStorage.setItem("soundEnabled", "false");
+          // ensure whole-quiz timer is the default on login
+          localStorage.setItem('timerMode', 'whole');
           setTimeout(() => { window.location.href = "/home.html"; }, 400);
         } else {
           const msg = data.error || "Đăng nhập thất bại";

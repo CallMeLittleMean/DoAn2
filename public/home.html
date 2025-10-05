@@ -151,6 +151,35 @@
         </label>
       </div>
 
+      <!-- Timer mode controls -->
+      <div style="margin-bottom:12px; text-align:left; display:flex; gap:12px; align-items:center;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-weight:600;">Chế độ Timer</div>
+          <div style="display:flex;gap:8px;">
+            <button id="mode-whole" class="mode-btn">Timer cả bài</button>
+            <button id="mode-perq" class="mode-btn">Timer từng câu</button>
+          </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;flex-direction:column;">
+            <label for="whole-time">Thời gian cả bài</label>
+            <select id="whole-time">
+              <option value="60">1 phút</option>
+              <option value="120">2 phút</option>
+              <option value="300">5 phút</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;">
+            <label for="perq-time">Thời gian mỗi câu</label>
+            <select id="perq-time">
+              <option value="5">5s</option>
+              <option value="10">10s</option>
+              <option value="20">20s</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <label for="num-questions">Số câu hỏi:</label>
       <select id="num-questions">
         <option value="5">5 câu</option>
@@ -236,6 +265,51 @@
 
       soundSwitch.addEventListener("change", () => {
         localStorage.setItem(SOUND_KEY, soundSwitch.checked ? "true" : "false");
+      });
+
+      // Timer mode controls
+      const MODE_KEY = 'timerMode'; // 'whole' or 'perq'
+      const WHOLE_KEY = 'wholeTime'; // seconds
+      const PERQ_KEY = 'perQuestionTime'; // seconds
+
+      const modeWholeBtn = document.getElementById('mode-whole');
+      const modePerqBtn = document.getElementById('mode-perq');
+      const wholeSelect = document.getElementById('whole-time');
+      const perqSelect = document.getElementById('perq-time');
+
+      function setMode(mode) {
+        localStorage.setItem(MODE_KEY, mode);
+        if (mode === 'whole') {
+          modeWholeBtn.style.background = '#16a34a';
+          modeWholeBtn.style.color = '#fff';
+          modePerqBtn.style.background = '';
+          perqSelect.disabled = true;
+          wholeSelect.disabled = false;
+        } else {
+          modePerqBtn.style.background = '#16a34a';
+          modePerqBtn.style.color = '#fff';
+          modeWholeBtn.style.background = '';
+          wholeSelect.disabled = true;
+          perqSelect.disabled = false;
+        }
+      }
+
+      // Initialize timer settings
+  const savedMode = localStorage.getItem(MODE_KEY) || 'whole';
+      const savedWhole = localStorage.getItem(WHOLE_KEY) || '300';
+      const savedPerq = localStorage.getItem(PERQ_KEY) || '10';
+      wholeSelect.value = savedWhole;
+      perqSelect.value = savedPerq;
+      setMode(savedMode);
+
+      modeWholeBtn.addEventListener('click', () => setMode('whole'));
+      modePerqBtn.addEventListener('click', () => setMode('perq'));
+
+      wholeSelect.addEventListener('change', () => {
+        localStorage.setItem(WHOLE_KEY, wholeSelect.value);
+      });
+      perqSelect.addEventListener('change', () => {
+        localStorage.setItem(PERQ_KEY, perqSelect.value);
       });
 
       // Toast helper (same style as quiz)

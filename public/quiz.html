@@ -56,7 +56,13 @@
       <div id="score" class="text-center mt-4 text-lg font-semibold">
         Điểm của bạn: <span id="score-value">0</span>
       </div>
+      <!-- Preload sounds -->
+      <audio id="sound-correct" src="/sound/right_answer_sound.mp3" preload="auto"></audio>
+      <audio id="sound-wrong" src="/sound/wrong_answer_sound.mp3" preload="auto"></audio>
     </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:9999;"></div>
 
     <script>
       let questions = [];
@@ -88,17 +94,23 @@
         fetch(`/api/questions`)
           .then((res) => res.json())
           .then((data) => {
-            if (data.length === 0) {
-              alert("Không có câu hỏi nào để làm quiz!");
-              window.location.href = "/home.html";
+            const requested = parseInt(localStorage.getItem('numQuestions') || '0', 10) || 0;
+            if (!Array.isArray(data) || data.length === 0) {
+              showToast("Không có câu hỏi nào để làm quiz!", 'error');
+              setTimeout(() => { window.location.href = '/home.html'; }, 900);
               return;
             }
-            questions = data;
+            if (requested > data.length) {
+              showToast("lựa chọn không hợp lệ mời chọn lại số lượng câu hỏi", 'error');
+              setTimeout(() => { window.location.href = '/home.html'; }, 900);
+              return;
+            }
+            questions = requested && requested > 0 ? data.slice(0, requested) : data;
             showQuestion();
           })
           .catch((err) => {
             console.error("Error loading quiz:", err);
-            alert("Có lỗi khi tải quiz: " + err.message);
+            showToast("Có lỗi khi tải quiz: " + err.message, "error");
           });
       }
 
@@ -118,12 +130,12 @@
         let html = "";
         if (q.type === "true_false") {
           html += `
-          <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <input type="radio" name="answer" value="true" class="h-4 w-4 text-blue-600" /> Đúng
-          </label>
-          <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <input type="radio" name="answer" value="false" class="h-4 w-4 text-blue-600" /> Sai
-          </label>
+            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="true">
+              <input type="radio" name="answer" value="true" class="h-4 w-4 text-blue-600" /> Đúng
+            </label>
+            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition" data-correct="false">
+              <input type="radio" name="answer" value="false" class="h-4 w-4 text-blue-600" /> Sai
+            </label>
         `;
         } else {
           for (let i = 0; i < q.options.length; i++) {
@@ -153,7 +165,7 @@
 
       function autoNextQuestion() {
         stopTimer();
-        alert("Hết giờ! Tự chuyển câu tiếp theo.");
+        showToast("Hết giờ! Tự chuyển câu tiếp theo.", "info");
         checkAnswer();
         currentIndex++;
         setTimeout(showQuestion, 1000);
@@ -165,12 +177,23 @@
         const correctLabel = q.correctAnswer;
         const selectedValue = selected ? selected.value : null;
 
+    // Play sounds if enabled
+    const soundEnabled = localStorage.getItem("soundEnabled") === "true";
+    const soundCorrect = document.getElementById("sound-correct");
+    const soundWrong = document.getElementById("sound-wrong");
+
         if (selectedValue === correctLabel) {
           score += 10;
           document.getElementById("score-value").innerText = score;
-          alert("Đúng! Bạn được 10 điểm.");
+          if (soundEnabled) {
+            try { soundCorrect.currentTime = 0; soundCorrect.play(); } catch (e) { /* ignore */ }
+          }
+          showToast("Đúng! Bạn được 10 điểm.", "success");
         } else {
-          alert(`Sai! Đáp án đúng là ${correctLabel}.`);
+          if (soundEnabled) {
+            try { soundWrong.currentTime = 0; soundWrong.play(); } catch (e) { /* ignore */ }
+          }
+          showToast(`Sai! Đáp án đúng là ${correctLabel}.`, "error");
         }
 
         // Tô xanh đáp án đúng
@@ -195,9 +218,47 @@
             }
           })
           .finally(() => {
-            alert(`Hoàn thành quiz! Tổng điểm: ${score}`);
-            window.location.href = "/home.html";
+            // show toast then redirect after short delay so user can see message
+            showToast(`Hoàn thành quiz! Tổng điểm: ${score}`, "success");
+            setTimeout(() => { window.location.href = "/home.html"; }, 1200);
           });
+      }
+
+      // Toast helper
+      function showToast(message, type = "info", timeout = 2000) {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        toast.className = "toast-item";
+        toast.style.minWidth = "220px";
+        toast.style.marginBottom = "8px";
+        toast.style.padding = "10px 14px";
+        toast.style.borderRadius = "8px";
+        toast.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)";
+        toast.style.color = "#fff";
+        toast.style.fontSize = "14px";
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 200ms, transform 200ms";
+        toast.style.transform = "translateY(-6px)";
+
+        if (type === "success") toast.style.background = "#16a34a"; // green
+        else if (type === "error") toast.style.background = "#dc2626"; // red
+        else toast.style.background = "#2563eb"; // blue
+
+        toast.innerText = message;
+        container.appendChild(toast);
+
+        // animate in
+        requestAnimationFrame(() => {
+          toast.style.opacity = "1";
+          toast.style.transform = "translateY(0)";
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(-6px)";
+          setTimeout(() => container.removeChild(toast), 220);
+        }, timeout);
       }
 
       window.onload = loadQuiz;

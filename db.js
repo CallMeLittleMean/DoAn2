@@ -10,5 +10,5 @@ const query = 'retryWrites=true&w=majority&appName=Cluster0';
 
 mongoose
   .connect(`mongodb+srv://${user}:${password}@${host}/${dbName}?${query}`)
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => console.log('Connect to MongoDB succeed.'))
   .catch((err) => console.error('MongoDB connection error:', err));

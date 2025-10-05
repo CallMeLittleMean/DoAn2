@@ -2,7 +2,7 @@
   "dependencies": {
     "express": "^5.1.0",
     "mongodb": "^6.20.0",
-    "mongoose": "^8.18.3",
+    "mongoose": "^8.19.0",
     "multer": "^2.0.2"
   },
   "name": "quizz-app",

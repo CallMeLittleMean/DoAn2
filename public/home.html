@@ -43,6 +43,14 @@
         margin-bottom: 20px;
       }
 
+      /* switch styles */
+      .switch { display:inline-block; }
+      .switch input { display:none; }
+  .switch .slider { display:inline-block; width:48px; height:26px; background:#dc2626 !important; border-radius:26px; position:relative; vertical-align:middle; transition:background .2s; cursor:pointer; }
+      .switch .slider::after { content: ''; position:absolute; top:3px; left:3px; width:20px; height:20px; background:white; border-radius:50%; transition:all .2s; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+  .switch input:checked + .slider { background: #16a34a !important; }
+      .switch input:checked + .slider::after { transform: translateX(22px); }
+
       .avatar {
         width: 100px;
         height: 100px;
@@ -132,6 +140,17 @@
         <a href="javascript:void(0)" onclick="editProfile()" class="edit-link">Chỉnh sửa hồ sơ</a>
       </div>
 
+      <!-- sound switch placed directly under edit profile -->
+      <div style="margin-bottom:12px; text-align:left;">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <span style="font-weight:600;">Phát âm thanh khi chọn đáp án</span>
+          <div class="switch" style="margin-left:auto;">
+            <input type="checkbox" id="sound-switch" />
+            <label for="sound-switch" class="slider"></label>
+          </div>
+        </label>
+      </div>
+
       <label for="num-questions">Số câu hỏi:</label>
       <select id="num-questions">
         <option value="5">5 câu</option>
@@ -142,7 +161,11 @@
 
       <button onclick="startQuiz()">Bắt đầu Quiz</button>
       <button onclick="addQuestion()">Thêm câu hỏi</button>
+      
     </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:9999;"></div>
 
     <script>
       const userId = localStorage.getItem("userId");
@@ -165,10 +188,28 @@
           });
       }
 
-      function startQuiz() {
-        const numQuestions = document.getElementById("num-questions").value;
-        localStorage.setItem("numQuestions", numQuestions);
-        window.location.href = "/quiz.html";
+      async function startQuiz() {
+        const numQuestions = parseInt(document.getElementById("num-questions").value, 10);
+        if (!numQuestions || numQuestions <= 0) {
+          showToast("lựa chọn không hợp lệ mời chọn lại số lượng câu hỏi", "error");
+          return;
+        }
+        try {
+          const res = await fetch(`/api/questions`);
+          if (!res.ok) throw new Error('Network response was not ok');
+          const data = await res.json();
+          if (!Array.isArray(data)) throw new Error('Invalid response');
+          if (data.length < numQuestions) {
+            showToast("lựa chọn không hợp lệ mời chọn lại số lượng câu hỏi", "error");
+            return;
+          }
+          localStorage.setItem("numQuestions", String(numQuestions));
+          // give a small delay so toast (if any) is visible, then navigate
+          setTimeout(() => { window.location.href = "/quiz.html"; }, 120);
+        } catch (err) {
+          console.error('Error validating questions:', err);
+          showToast("Có lỗi khi kiểm tra số lượng câu hỏi. Vui lòng thử lại.", "error");
+        }
       }
 
       function addQuestion() {
@@ -182,6 +223,56 @@
       function logout() {
         localStorage.removeItem("userId");
         window.location.href = "/login.html";
+      }
+
+      // Sound toggle: default OFF
+      const SOUND_KEY = "soundEnabled";
+      const soundSwitch = document.getElementById("sound-switch");
+
+      // Initialize switch (default OFF)
+      const saved = localStorage.getItem(SOUND_KEY);
+      const enabled = saved === "true"; // default false
+      soundSwitch.checked = !!enabled;
+
+      soundSwitch.addEventListener("change", () => {
+        localStorage.setItem(SOUND_KEY, soundSwitch.checked ? "true" : "false");
+      });
+
+      // Toast helper (same style as quiz)
+      function showToast(message, type = "info", timeout = 2000) {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        toast.className = "toast-item";
+        toast.style.minWidth = "220px";
+        toast.style.marginBottom = "8px";
+        toast.style.padding = "10px 14px";
+        toast.style.borderRadius = "8px";
+        toast.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)";
+        toast.style.color = "#fff";
+        toast.style.fontSize = "14px";
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 200ms, transform 200ms";
+        toast.style.transform = "translateY(-6px)";
+
+        if (type === "success") toast.style.background = "#16a34a"; // green
+        else if (type === "error") toast.style.background = "#dc2626"; // red
+        else toast.style.background = "#2563eb"; // blue
+
+        toast.innerText = message;
+        container.appendChild(toast);
+
+        // animate in
+        requestAnimationFrame(() => {
+          toast.style.opacity = "1";
+          toast.style.transform = "translateY(0)";
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(-6px)";
+          setTimeout(() => container.removeChild(toast), 220);
+        }, timeout);
       }
     </script>
   </body>

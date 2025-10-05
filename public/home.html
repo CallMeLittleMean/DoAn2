@@ -142,6 +142,14 @@
 
       <!-- sound switch placed directly under edit profile -->
       <div style="margin-bottom:12px; text-align:left;">
+        <!-- Background music toggle (above the per-choice sound switch) -->
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:8px;">
+          <span style="font-weight:600;">Nhạc nền</span>
+          <div class="switch" style="margin-left:auto;">
+            <input type="checkbox" id="bgmusic-switch" />
+            <label for="bgmusic-switch" class="slider"></label>
+          </div>
+        </label>
         <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
           <span style="font-weight:600;">Phát âm thanh khi chọn đáp án</span>
           <div class="switch" style="margin-left:auto;">
@@ -258,6 +266,11 @@
       const SOUND_KEY = "soundEnabled";
       const soundSwitch = document.getElementById("sound-switch");
 
+  // Background music persistent player
+  const BGM_KEY = 'bgMusicEnabled';
+  const bgSwitch = document.getElementById('bgmusic-switch');
+  let bgPlayerWindow = null;
+
       // Initialize switch (default OFF)
       const saved = localStorage.getItem(SOUND_KEY);
       const enabled = saved === "true"; // default false
@@ -266,6 +279,43 @@
       soundSwitch.addEventListener("change", () => {
         localStorage.setItem(SOUND_KEY, soundSwitch.checked ? "true" : "false");
       });
+
+      // Initialize background music switch
+      try {
+        const bgSaved = localStorage.getItem(BGM_KEY) === 'true';
+        if (bgSwitch) {
+          bgSwitch.checked = bgSaved;
+          bgSwitch.addEventListener('change', () => {
+            localStorage.setItem(BGM_KEY, bgSwitch.checked ? 'true' : 'false');
+            if (bgSwitch.checked) {
+              // open named window so it persists across navigations
+              try {
+                bgPlayerWindow = window.open('/bg-player.html', 'quiz-bg-player', 'width=360,height=140');
+                if (!bgPlayerWindow) {
+                  showToast('Trình duyệt chặn mở cửa sổ nhạc nền. Vui lòng cho phép popup cho trang này.', 'error');
+                  bgSwitch.checked = false;
+                  localStorage.setItem(BGM_KEY, 'false');
+                } else {
+                  try { bgPlayerWindow.focus(); } catch (e) {}
+                }
+              } catch (e) {
+                console.error('Unable to open bg player', e);
+                showToast('Không thể mở player nhạc nền.', 'error');
+                bgSwitch.checked = false;
+                localStorage.setItem(BGM_KEY, 'false');
+              }
+            } else {
+              // try close the named window
+              try { const w = window.open('', 'quiz-bg-player'); if (w) w.close(); } catch (e) {}
+            }
+          });
+        }
+
+        // If previously enabled, attempt to open player (note: may be blocked if not a user gesture)
+        if (bgSaved) {
+          try { bgPlayerWindow = window.open('/bg-player.html', 'quiz-bg-player', 'width=360,height=140'); if (!bgPlayerWindow) { showToast('Trình duyệt chặn mở cửa sổ nhạc nền. Vui lòng cho phép popup cho trang này.', 'error'); bgSwitch.checked = false; localStorage.setItem(BGM_KEY,'false'); } } catch (e) { console.error(e); }
+        }
+      } catch (e) { console.debug('bg player init error', e); }
 
       // Timer mode controls
       const MODE_KEY = 'timerMode'; // 'whole' or 'perq'

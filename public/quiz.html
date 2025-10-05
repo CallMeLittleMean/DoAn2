@@ -79,6 +79,7 @@
       let currentIndex = 0;
     let score = 0;
   let wrongAnswers = [];
+  let answeredCount = 0;
       const userId = localStorage.getItem("userId") || "";
 
       // Fisher-Yates shuffle
@@ -285,6 +286,7 @@
             try { soundCorrect.currentTime = 0; soundCorrect.play(); } catch (e) { /* ignore */ }
           }
           showToast("Đúng! Bạn được 10 điểm.", "success");
+          if (selected) answeredCount++;
         } else {
           if (soundEnabled) {
             try { soundWrong.currentTime = 0; soundWrong.play(); } catch (e) { /* ignore */ }
@@ -297,6 +299,7 @@
             correct: correctLabel,
             options: q._shuffledOptions || []
           });
+          if (selected) answeredCount++;
         }
 
         // Tô xanh đáp án đúng
@@ -358,7 +361,9 @@
         `;
 
         const wrongEl = document.getElementById('results-wrongs');
-        if (wrongAnswers.length === 0) {
+        if (answeredCount === 0) {
+          wrongEl.innerHTML = '<p>Bạn chưa trả lời câu nào.</p>';
+        } else if (wrongAnswers.length === 0) {
           wrongEl.innerHTML = '<p>Tuyệt vời! Không có câu sai.</p>';
         } else {
           let html = '';

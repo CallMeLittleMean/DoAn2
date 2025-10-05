@@ -229,6 +229,8 @@
           localStorage.setItem("soundEnabled", "false");
           // ensure whole-quiz timer is the default on login
           localStorage.setItem('timerMode', 'whole');
+          // ensure a sensible default wholeTime exists (5 minutes) so results show correctly
+          if (!localStorage.getItem('wholeTime')) localStorage.setItem('wholeTime', '300');
           setTimeout(() => { window.location.href = "/home.html"; }, 400);
         } else {
           const msg = data.error || "Đăng nhập thất bại";

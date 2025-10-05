@@ -318,13 +318,28 @@
   const timeMode = localStorage.getItem('timerMode') || 'whole';
   let elapsed = 0;
   let totalAllowed = 0;
+  // Coerce to numbers safely with sensible defaults
+  const wholeSec = parseInt(localStorage.getItem('wholeTime') || '300', 10) || 300;
+  const perqSec = parseInt(localStorage.getItem('perQuestionTime') || '10', 10) || 10;
+
   if (timeMode === 'whole') {
-    totalAllowed = parseInt(localStorage.getItem('wholeTime')||'0',10);
-    elapsed = totalAllowed - totalTimeLeft;
+    totalAllowed = wholeSec || 300;
+    if (quizStartTime) {
+      elapsed = Math.floor((Date.now() - quizStartTime) / 1000);
+    } else if (typeof totalTimeLeft === 'number') {
+      elapsed = totalAllowed - (Number(totalTimeLeft) || 0);
+    } else {
+      elapsed = 0;
+    }
   } else {
-    totalAllowed = parseInt(localStorage.getItem('perQuestionTime')||'0',10) * questions.length || 0;
+    totalAllowed = perqSec * questions.length || 0;
     elapsed = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 0;
   }
+
+  // clamp elapsed to sensible bounds
+  if (isNaN(elapsed) || elapsed < 0) elapsed = 0;
+  if (isNaN(totalAllowed) || totalAllowed < 0) totalAllowed = 0;
+  if (totalAllowed > 0 && elapsed > totalAllowed) elapsed = totalAllowed;
 
   function fmt(s) {
     if (typeof s !== 'number' || isNaN(s)) return 'N/A';

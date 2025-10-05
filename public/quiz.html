@@ -5,38 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Làm Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .fade-in {
-        animation: fadeIn 0.3s ease-in-out;
-      }
-      .correct-answer {
-        background-color: #d1fae5;
-        border-color: #10b981;
-      }
-      .timer {
-        text-align: center;
-        font-size: 1.2rem;
-        color: #ef4444;
-        margin-bottom: 1rem;
-      }
-    </style>
+    <link rel="stylesheet" href="/style/quiz.css">
   </head>
-  <body
-    class="bg-gray-100 font-sans flex items-center justify-center min-h-screen"
-  >
-    <div
-      class="quiz-container bg-white p-6 rounded-xl shadow-lg w-full max-w-lg fade-in"
-    >
+  <body style="font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(to right, #a1ffce, #faffd1); margin:0; padding:0; display:flex;align-items:center;justify-content:center;min-height:100vh;">
+    <div class="quiz-container bg-white p-6 rounded-xl shadow-lg w-full max-w-lg fade-in" style="margin:24px;">
       <h3
         id="question-title"
         class="text-xl font-semibold text-gray-800 mb-4 text-center"
@@ -47,8 +19,9 @@
       <div class="flex justify-center gap-3 mt-6">
         <button
           onclick="nextQuestion()"
-          class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition font-medium"
+          class="btn-primary px-6 py-2 rounded-lg hover:bg-green-600 transition font-medium"
           id="next-btn"
+          style="border:none;"
         >
           Tiếp theo
         </button>
@@ -58,7 +31,9 @@
       </div>
       <!-- Preload sounds -->
       <audio id="sound-correct" src="/sound/right_answer_sound.mp3" preload="auto"></audio>
-      <audio id="sound-wrong" src="/sound/wrong_answer_sound.mp3" preload="auto"></audio>
+      <audio id="sound-wrong" src="/sound/wrong_answer_sound_2.mp3" preload="auto"></audio>
+      <!-- Background music (controlled via home settings) -->
+      <audio id="bg-music-audio" src="/sound/background_music.mp3" preload="auto" loop></audio>
     </div>
 
     <!-- Toast container -->
@@ -441,6 +416,31 @@
       }
 
       window.onload = loadQuiz;
+
+      // Initialize background music in quiz: honor the same storage key and sync across tabs/pages
+      (function initBgInQuiz() {
+        const BGM_KEY = 'bgMusicEnabled';
+        const bgAudioEl = document.getElementById('bg-music-audio');
+        if (!bgAudioEl) return;
+        const enabled = localStorage.getItem(BGM_KEY) === 'true';
+        if (enabled) {
+          bgAudioEl.play().catch(() => {
+            // autoplay blocked; nothing to do (user must enable interactively)
+          });
+        }
+        // listen for storage changes from other pages (home)
+        window.addEventListener('storage', (ev) => {
+          if (ev.key === BGM_KEY) {
+            const val = ev.newValue === 'true';
+            if (val) {
+              bgAudioEl.play().catch(() => {});
+            } else {
+              bgAudioEl.pause();
+              bgAudioEl.currentTime = 0;
+            }
+          }
+        });
+      })();
     </script>
   </body>
 </html>

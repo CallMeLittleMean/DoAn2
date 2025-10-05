@@ -1,0 +1,15 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in { animation: fadeIn 0.3s ease-in-out; }
+.correct-answer { background-color: #d1fae5; border-color: #10b981; }
+.timer { text-align: center; font-size: 1.2rem; color: #166d2f; margin-bottom: 1rem; }
+.btn-primary { background-color: #4caf50; color:#fff; }
+.btn-primary:hover { background-color: #43a047; }

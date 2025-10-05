@@ -4,79 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Quiz App - Login</title>
-    <style>
-      body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(to right, #c9ffbf, #ffafbd);
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-      }
-
-      .login-container {
-        background-color: white;
-        padding: 32px;
-        border-radius: 16px;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-        width: 100%;
-        max-width: 340px;
-        text-align: center;
-        animation: fadeIn 0.5s ease-in-out;
-      }
-
-      @keyframes fadeIn {
-        from {
-          transform: translateY(20px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      h2 {
-        margin-bottom: 20px;
-        color: #333;
-      }
-
-      input[type="text"],
-      input[type="password"] {
-        width: 100%;
-        padding: 12px;
-        margin: 10px 0;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        box-sizing: border-box;
-        font-size: 15px;
-      }
-
-      button {
-        width: 100%;
-        padding: 12px;
-        margin-top: 12px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-      }
-
-      button:hover {
-        background-color: #43a047;
-      }
-
-      .error {
-        color: red;
-        margin-top: 10px;
-        font-size: 14px;
-      }
-    </style>
+    <link rel="stylesheet" href="/style/login.css">
   </head>
   <body>
     <div class="login-container">
@@ -227,6 +155,8 @@
           localStorage.setItem("userId", data.userId);
           // ensure sound is OFF by default when logging in
           localStorage.setItem("soundEnabled", "false");
+          // ensure background music default OFF on login
+          try { localStorage.setItem('bgMusicEnabled','false'); } catch (e) {}
           // ensure whole-quiz timer is the default on login
           localStorage.setItem('timerMode', 'whole');
           // ensure a sensible default wholeTime exists (5 minutes) so results show correctly

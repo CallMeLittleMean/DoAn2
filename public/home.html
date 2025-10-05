@@ -4,201 +4,97 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Quiz App - Home</title>
-    <style>
-      body {
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-        background: linear-gradient(to right, #a1ffce, #faffd1);
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-      }
-
-      .home-container {
-        background-color: #ffffff;
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-        width: 100%;
-        max-width: 420px;
-        text-align: center;
-        animation: fadeIn 0.5s ease-in-out;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .home-container h2 {
-        color: #333;
-        margin-bottom: 20px;
-      }
-
-      /* switch styles */
-      .switch { display:inline-block; }
-      .switch input { display:none; }
-  .switch .slider { display:inline-block; width:48px; height:26px; background:#dc2626 !important; border-radius:26px; position:relative; vertical-align:middle; transition:background .2s; cursor:pointer; }
-      .switch .slider::after { content: ''; position:absolute; top:3px; left:3px; width:20px; height:20px; background:white; border-radius:50%; transition:all .2s; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
-  .switch input:checked + .slider { background: #16a34a !important; }
-      .switch input:checked + .slider::after { transform: translateX(22px); }
-
-      .avatar {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #4caf50;
-        margin-bottom: 15px;
-      }
-
-      .info {
-        margin-bottom: 20px;
-        color: #555;
-      }
-
-      .edit-link {
-        font-size: 14px;
-        color: #007bff;
-        text-decoration: none;
-        display: inline-block;
-        margin-top: 5px;
-      }
-
-      .edit-link:hover {
-        text-decoration: underline;
-      }
-
-      label {
-        font-weight: 500;
-        margin-bottom: 5px;
-        display: block;
-      }
-
-      select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        margin-bottom: 15px;
-        font-size: 16px;
-      }
-
-      .home-container button {
-        width: 100%;
-        padding: 12px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        margin-top: 10px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      .home-container button:hover {
-        background-color: #43a047;
-      }
-
-      .logout-btn {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        padding: 8px 16px;
-        background-color: #f44336;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      .logout-btn:hover {
-        background-color: #d32f2f;
-      }
-    </style>
+    <link rel="stylesheet" href="/style/home.css">
   </head>
   <body>
-    <button class="logout-btn" onclick="logout()">Thoát</button>
 
-    <div class="home-container">
-      <h2>Chào mừng đến với Quiz App!</h2>
-      <img id="avatar" class="avatar" src="" alt="Avatar người dùng" />
-      <div class="info">
-        <p><strong>Tên:</strong> <span id="display-name"></span></p>
-        <p><strong>Điểm cao nhất:</strong> <span id="high-score">0</span></p>
-        <a href="javascript:void(0)" onclick="editProfile()" class="edit-link">Chỉnh sửa hồ sơ</a>
-      </div>
-
-      <!-- sound switch placed directly under edit profile -->
-      <div style="margin-bottom:12px; text-align:left;">
-        <!-- Background music toggle (above the per-choice sound switch) -->
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:8px;">
-          <span style="font-weight:600;">Nhạc nền</span>
-          <div class="switch" style="margin-left:auto;">
-            <input type="checkbox" id="bgmusic-switch" />
-            <label for="bgmusic-switch" class="slider"></label>
-          </div>
-        </label>
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
-          <span style="font-weight:600;">Phát âm thanh khi chọn đáp án</span>
-          <div class="switch" style="margin-left:auto;">
-            <input type="checkbox" id="sound-switch" />
-            <label for="sound-switch" class="slider"></label>
-          </div>
-        </label>
-      </div>
-
-      <!-- Timer mode controls -->
-      <div style="margin-bottom:12px; text-align:left; display:flex; gap:12px; align-items:center;">
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="font-weight:600;">Chế độ Timer</div>
-          <div style="display:flex;gap:8px;">
-            <button id="mode-whole" class="mode-btn">Timer cả bài</button>
-            <button id="mode-perq" class="mode-btn">Timer từng câu</button>
-          </div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;">
+      <div class="home-card" style="background-color:#ffffff;padding:30px;border-radius:16px;box-shadow:0 12px 24px rgba(0,0,0,0.15);width:100%;max-width:420px;text-align:center;">
+        <h2>Chào mừng đến với Quiz App!</h2>
+        <img id="avatar" class="avatar" src="" alt="Avatar người dùng" />
+        <div class="info">
+          <p><strong>Tên:</strong> <span id="display-name"></span></p>
+          <p><strong>Điểm cao nhất:</strong> <span id="high-score">0</span></p>
         </div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
-          <div style="display:flex;flex-direction:column;">
-            <label for="whole-time">Thời gian cả bài</label>
-            <select id="whole-time">
-              <option value="60">1 phút</option>
-              <option value="120">2 phút</option>
-              <option value="300">5 phút</option>
-            </select>
-          </div>
-          <div style="display:flex;flex-direction:column;">
-            <label for="perq-time">Thời gian mỗi câu</label>
-            <select id="perq-time">
-              <option value="5">5s</option>
-              <option value="10">10s</option>
-              <option value="20">20s</option>
-            </select>
-          </div>
+
+        <!-- move num-questions and buttons back into the center card -->
+        <label for="num-questions">Số câu hỏi:</label>
+        <select id="num-questions">
+          <option value="5">5 câu</option>
+          <option value="10">10 câu</option>
+          <option value="15">15 câu</option>
+          <option value="20">20 câu</option>
+        </select>
+
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px;">
+          <button onclick="startQuiz()" style="width:100%;padding:12px;background:#4caf50;color:#fff;border:none;border-radius:8px;">Bắt đầu Quiz</button>
+          <button onclick="addQuestion()" style="width:100%;padding:12px;background:#4caf50;color:#fff;border:none;border-radius:8px;">Thêm câu hỏi</button>
         </div>
       </div>
 
-      <label for="num-questions">Số câu hỏi:</label>
-      <select id="num-questions">
-        <option value="5">5 câu</option>
-        <option value="10">10 câu</option>
-        <option value="15">15 câu</option>
-        <option value="20">20 câu</option>
-      </select>
+      <div class="settings-panel" style="background:#fff;padding:30px;border-radius:16px;box-shadow:0 12px 24px rgba(0,0,0,0.15);">
+        <h3 style="text-align:center;margin-top:0;">Cài đặt</h3>
+        <div style="text-align:center;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;align-items:center;">
+          <a href="javascript:void(0)" onclick="editProfile()" class="edit-link">Chỉnh sửa hồ sơ</a>
+          <button class="logout-btn" onclick="logout()" style="width:80%;">Đăng xuất</button>
+        </div>
 
-      <button onclick="startQuiz()">Bắt đầu Quiz</button>
-      <button onclick="addQuestion()">Thêm câu hỏi</button>
-      
+        <!-- sound switch -->
+        <!-- background music toggle (placed above the per-choice sound switch) -->
+          <div style="margin-bottom:12px;text-align:left;">
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+              <span style="font-weight:600;">Phát nhạc nền</span>
+              <div class="switch" style="margin-left:auto;">
+                <input type="checkbox" id="bg-switch" />
+                <label for="bg-switch" class="slider"></label>
+              </div>
+            </label>
+            <audio id="bg-music-audio" src="/sound/background_music.mp3" preload="auto" loop></audio>
+          </div>
+
+        <div style="margin-bottom:12px; text-align:left;">
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+            <span style="font-weight:600;">Phát âm thanh khi chọn đáp án</span>
+            <div class="switch" style="margin-left:auto;">
+              <input type="checkbox" id="sound-switch" />
+              <label for="sound-switch" class="slider"></label>
+            </div>
+          </label>
+        </div>
+
+        <!-- Timer mode controls -->
+        <div style="margin-bottom:12px; text-align:left; display:flex; gap:12px; align-items:center;">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-weight:600;">Chế độ Timer</div>
+            <div style="display:flex;gap:8px;">
+              <button id="mode-whole" class="mode-btn">Timer cả bài</button>
+              <button id="mode-perq" class="mode-btn">Timer từng câu</button>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;flex-direction:column;">
+              <label for="whole-time">Thời gian cả bài</label>
+              <select id="whole-time">
+                <option value="60">1 phút</option>
+                <option value="120">2 phút</option>
+                <option value="300">5 phút</option>
+                <option value="600">10 phút</option>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+              <label for="perq-time">Thời gian mỗi câu</label>
+              <select id="perq-time">
+                <option value="5">5 giây</option>
+                <option value="10">10 giây</option>
+                <option value="15">15 giây</option>
+                <option value="20">20 giây</option>
+                <option value="25">25 giây</option>
+                <option value="30">30 giây</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Toast container -->
@@ -224,6 +120,58 @@
             console.error("Error loading profile:", err);
           });
       }
+
+      // Background music control (default OFF when not set)
+      const BGM_KEY = 'bgMusicEnabled';
+        const bgSwitch = document.getElementById('bg-switch');
+      const bgAudio = document.getElementById('bg-music-audio');
+      try {
+        const savedBg = localStorage.getItem(BGM_KEY) === 'true';
+          if (bgSwitch) {
+            // initialize UI
+            bgSwitch.checked = !!savedBg;
+            // if saved true, try to start playing (best-effort)
+            if (savedBg) {
+              bgAudio.play().catch(() => {
+                // autoplay blocked; reflect off state and notify user
+                bgSwitch.checked = false;
+                localStorage.setItem(BGM_KEY, 'false');
+                showToast('Trình duyệt chặn autoplay. Vui lòng tương tác để phát nhạc.', 'error');
+              });
+            }
+
+            bgSwitch.addEventListener('change', async () => {
+              if (bgSwitch.checked) {
+                try {
+                  await bgAudio.play();
+                  localStorage.setItem(BGM_KEY, 'true');
+                } catch (e) {
+                  bgSwitch.checked = false;
+                  localStorage.setItem(BGM_KEY, 'false');
+                  showToast('Trình duyệt chặn autoplay. Vui lòng tương tác để phát nhạc.', 'error');
+                }
+              } else {
+                bgAudio.pause();
+                bgAudio.currentTime = 0;
+                localStorage.setItem(BGM_KEY, 'false');
+              }
+            });
+
+            // sync across pages/tabs: update UI and play/pause audio when storage changes
+            window.addEventListener('storage', (ev) => {
+              if (ev.key === BGM_KEY) {
+                const val = ev.newValue === 'true';
+                if (bgSwitch.checked !== val) bgSwitch.checked = val;
+                if (val) {
+                  bgAudio.play().catch(() => {});
+                } else {
+                  bgAudio.pause();
+                  bgAudio.currentTime = 0;
+                }
+              }
+            });
+        }
+      } catch (e) { console.debug('bg init err', e); }
 
       async function startQuiz() {
         const numQuestions = parseInt(document.getElementById("num-questions").value, 10);
@@ -266,11 +214,6 @@
       const SOUND_KEY = "soundEnabled";
       const soundSwitch = document.getElementById("sound-switch");
 
-  // Background music persistent player
-  const BGM_KEY = 'bgMusicEnabled';
-  const bgSwitch = document.getElementById('bgmusic-switch');
-  let bgPlayerWindow = null;
-
       // Initialize switch (default OFF)
       const saved = localStorage.getItem(SOUND_KEY);
       const enabled = saved === "true"; // default false
@@ -280,42 +223,7 @@
         localStorage.setItem(SOUND_KEY, soundSwitch.checked ? "true" : "false");
       });
 
-      // Initialize background music switch
-      try {
-        const bgSaved = localStorage.getItem(BGM_KEY) === 'true';
-        if (bgSwitch) {
-          bgSwitch.checked = bgSaved;
-          bgSwitch.addEventListener('change', () => {
-            localStorage.setItem(BGM_KEY, bgSwitch.checked ? 'true' : 'false');
-            if (bgSwitch.checked) {
-              // open named window so it persists across navigations
-              try {
-                bgPlayerWindow = window.open('/bg-player.html', 'quiz-bg-player', 'width=360,height=140');
-                if (!bgPlayerWindow) {
-                  showToast('Trình duyệt chặn mở cửa sổ nhạc nền. Vui lòng cho phép popup cho trang này.', 'error');
-                  bgSwitch.checked = false;
-                  localStorage.setItem(BGM_KEY, 'false');
-                } else {
-                  try { bgPlayerWindow.focus(); } catch (e) {}
-                }
-              } catch (e) {
-                console.error('Unable to open bg player', e);
-                showToast('Không thể mở player nhạc nền.', 'error');
-                bgSwitch.checked = false;
-                localStorage.setItem(BGM_KEY, 'false');
-              }
-            } else {
-              // try close the named window
-              try { const w = window.open('', 'quiz-bg-player'); if (w) w.close(); } catch (e) {}
-            }
-          });
-        }
-
-        // If previously enabled, attempt to open player (note: may be blocked if not a user gesture)
-        if (bgSaved) {
-          try { bgPlayerWindow = window.open('/bg-player.html', 'quiz-bg-player', 'width=360,height=140'); if (!bgPlayerWindow) { showToast('Trình duyệt chặn mở cửa sổ nhạc nền. Vui lòng cho phép popup cho trang này.', 'error'); bgSwitch.checked = false; localStorage.setItem(BGM_KEY,'false'); } } catch (e) { console.error(e); }
-        }
-      } catch (e) { console.debug('bg player init error', e); }
+      
 
       // Timer mode controls
       const MODE_KEY = 'timerMode'; // 'whole' or 'perq'
@@ -330,15 +238,13 @@
       function setMode(mode) {
         localStorage.setItem(MODE_KEY, mode);
         if (mode === 'whole') {
-          modeWholeBtn.style.background = '#16a34a';
-          modeWholeBtn.style.color = '#fff';
-          modePerqBtn.style.background = '';
+          modeWholeBtn.classList.add('active');
+          modePerqBtn.classList.remove('active');
           perqSelect.disabled = true;
           wholeSelect.disabled = false;
         } else {
-          modePerqBtn.style.background = '#16a34a';
-          modePerqBtn.style.color = '#fff';
-          modeWholeBtn.style.background = '';
+          modePerqBtn.classList.add('active');
+          modeWholeBtn.classList.remove('active');
           wholeSelect.disabled = true;
           perqSelect.disabled = false;
         }

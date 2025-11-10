@@ -377,7 +377,7 @@
 
         // determine type from the selected correctAnswer value
         const type = (typeof correctAnswer === 'string' && correctAnswer.length === 1) ? 'multiple_choice' : 'true_false';
-
+        
         if (type === "true_false") {
           options = ["true", "false"];
         } else {

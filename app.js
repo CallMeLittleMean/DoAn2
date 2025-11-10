@@ -4,24 +4,21 @@ const mongoose = require("mongoose");
 const app = express();
 const port = 3000;
 const multer = require("multer");
-const fs = require("fs");
+// load environment variables from .env (CLOUDINARY_* vars expected)
+require("dotenv").config();
+const cloudinary = require("cloudinary").v2;
+const streamifier = require("streamifier");
 require("./db.js");
 
-
-const uploadDir = path.join(__dirname, "public/images");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/images/");
-  },
-  filename: (req, file, cb) => {
-    const cleanFileName = file.originalname.replace(/\s+/g, "_");
-    cb(null, Date.now() + "-" + cleanFileName);
-  },
+// Configure Cloudinary using env vars
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// Use memory storage so we can stream directly to Cloudinary
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/")) {
@@ -141,6 +138,17 @@ app.get("/api/profile/:userId", async (req, res) => {
   }
 });
 
+// Helper to upload buffer to Cloudinary
+function uploadBufferToCloudinary(buffer, options = {}) {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    });
+    streamifier.createReadStream(buffer).pipe(uploadStream);
+  });
+}
+
 app.put("/api/profile/:userId", upload.single("avatar"), async (req, res) => {
   const { userId } = req.params;
   const { displayName, highScore } = req.body;
@@ -152,7 +160,11 @@ app.put("/api/profile/:userId", upload.single("avatar"), async (req, res) => {
     if (displayName) user.displayName = displayName;
     if (highScore !== undefined) user.highScore = highScore;
     if (req.file) {
-      user.avatar = "/images/" + req.file.filename;
+      // upload to cloudinary and store secure url in DB
+      const result = await uploadBufferToCloudinary(req.file.buffer, { folder: "avatars", resource_type: "image" });
+      if (result && result.secure_url) {
+        user.avatar = result.secure_url;
+      }
     }
     await user.save();
     res.json({ message: "Cập nhật hồ sơ thành công", user });

@@ -3,12 +3,17 @@
     "express": "^5.1.0",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "cloudinary": "^1.37.0",
+    "streamifier": "^0.1.1",
+    "dotenv": "^16.0.0"
   },
   "name": "quizz-app",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "server/app.js",
   "scripts": {
+    "start": "node server/app.js",
+    "dev": "nodemon server/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

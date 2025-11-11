@@ -77,7 +77,7 @@ const userId = localStorage.getItem("userId");
           return;
         }
         try {
-          const res = await fetch(`/api/questions`);
+          const res = await fetch(`/api/questions`, { headers: { 'x-user-id': userId } });
           if (!res.ok) throw new Error('Network response was not ok');
           const data = await res.json();
           if (!Array.isArray(data)) throw new Error('Invalid response');

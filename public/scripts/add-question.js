@@ -164,6 +164,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "x-user-id": userId,
             },
             body: JSON.stringify(payload),
           })
@@ -208,7 +209,9 @@
         });
 
       function loadQuestionList() {
-        fetch("/api/questions")
+        const userId = localStorage.getItem('userId');
+        if (!userId) { window.location.href = '/login.html'; return; }
+        fetch("/api/questions", { headers: { 'x-user-id': userId } })
           .then((res) => {
             if (!res.ok) {
               throw new Error(`HTTP error! status: ${res.status}`);
@@ -264,7 +267,8 @@
         const btn = document.getElementById('confirm-delete-btn');
         if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
         fetch(`/api/questions/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: { 'x-user-id': localStorage.getItem('userId') }
         })
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -286,7 +290,7 @@
       }
 
       function editQuestion(id) {
-        fetch(`/api/questions/${id}`)
+        fetch(`/api/questions/${id}`, { headers: { 'x-user-id': localStorage.getItem('userId') } })
           .then((res) => {
             if (!res.ok) {
               throw new Error(`HTTP error! status: ${res.status}`);
@@ -397,6 +401,8 @@
           options,
         };
 
+        const userId = localStorage.getItem('userId');
+        if (!userId) { showToast('Bạn cần đăng nhập', 'error'); return; }
         const saveBtn = document.getElementById('save-edit-btn');
         if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; }
 
@@ -404,6 +410,7 @@
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            "x-user-id": userId,
           },
           body: JSON.stringify(payload),
         })

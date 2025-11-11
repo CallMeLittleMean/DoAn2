@@ -76,7 +76,7 @@
       }
 
       function loadQuiz() {
-        fetch(`/api/questions`)
+        fetch(`/api/questions`, { headers: { 'x-user-id': userId } })
           .then((res) => res.json())
           .then((data) => {
             const requested = parseInt(localStorage.getItem('numQuestions') || '0', 10) || 0;

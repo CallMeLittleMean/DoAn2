@@ -76,6 +76,11 @@ const questionSchema = new mongoose.Schema({
 });
 const Question = mongoose.model("Question", questionSchema);
 
+// helper to extract requesting user id from header, query or body
+function getRequestingUserId(req) {
+  return (req.header('x-user-id') || req.query.userId || req.body.createdBy || null);
+}
+
 async function checkAccount(username, password) {
   const user = await User.findOne({ username, password });
   if (user) {
@@ -175,8 +180,10 @@ app.put("/api/profile/:userId", upload.single("avatar"), async (req, res) => {
 });
 
 app.get("/api/questions", async (req, res) => {
+  const userId = getRequestingUserId(req);
+  if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
   try {
-    const questions = await Question.find().sort({ createdAt: -1 });
+    const questions = await Question.find({ createdBy: userId }).sort({ createdAt: -1 });
     res.json(questions);
   } catch (err) {
     console.error("Error loading questions:", err);
@@ -186,10 +193,15 @@ app.get("/api/questions", async (req, res) => {
 
 app.get("/api/questions/:id", async (req, res) => {
   const { id } = req.params;
+  const userId = getRequestingUserId(req);
+  if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
   try {
     const question = await Question.findById(id);
     if (!question) {
       return res.status(404).json({ error: "Không tìm thấy câu hỏi" });
+    }
+    if (!question.createdBy.equals(userId)) {
+      return res.status(403).json({ error: "Forbidden: bạn không có quyền xem câu hỏi này" });
     }
     res.json(question);
   } catch (err) {
@@ -199,15 +211,18 @@ app.get("/api/questions/:id", async (req, res) => {
 });
 
 app.post("/api/questions", async (req, res) => {
-  const { questionText, type, options, correctAnswer, createdBy } = req.body;
-  console.log("Received payload:", req.body);
+  const { questionText, type, options, correctAnswer } = req.body;
+  // prefer header/query user id to avoid client spoofing
+  const userId = getRequestingUserId(req);
+  if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
+  console.log("Received payload (creating by):", userId, req.body);
   try {
     const newQuestion = new Question({
       questionText,
       type,
       options,
       correctAnswer,
-      createdBy,
+      createdBy: userId,
     });
     await newQuestion.save();
     res.json({ message: "Thêm câu hỏi thành công!", question: newQuestion });
@@ -222,9 +237,15 @@ app.put("/api/questions/:id", async (req, res) => {
   const { questionText, type, options, correctAnswer } = req.body;
   console.log("Update payload:", req.body);
   try {
+    const userId = getRequestingUserId(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
+
     const question = await Question.findById(id);
     if (!question) {
       return res.status(404).json({ error: "Không tìm thấy câu hỏi" });
+    }
+    if (!question.createdBy.equals(userId)) {
+      return res.status(403).json({ error: "Forbidden: bạn không có quyền cập nhật câu hỏi này" });
     }
     question.questionText = questionText;
     question.type = type;
@@ -245,9 +266,15 @@ app.get("/api/questions/:id", async (req, res) => {
     return res.status(400).json({ error: "ID không hợp lệ" });
   }
   try {
+    const userId = getRequestingUserId(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
+
     const q = await Question.findById(id);
     if (!q) {
       return res.status(404).json({ error: "Không tìm thấy câu hỏi" });
+    }
+    if (!q.createdBy.equals(userId)) {
+      return res.status(403).json({ error: "Forbidden: bạn không có quyền xem câu hỏi này" });
     }
     res.json(q);
   } catch (err) {
@@ -268,14 +295,20 @@ app.delete("/api/questions/:id", async (req, res) => {
   }
 
   try {
-    const deletedQuestion = await Question.findByIdAndDelete(id);
+    const userId = getRequestingUserId(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
 
-    if (!deletedQuestion) {
+    const question = await Question.findById(id);
+    if (!question) {
       console.warn(`Question not found for deletion. ID: ${id}`);
       return res.status(404).json({ error: "Không tìm thấy câu hỏi để xóa" });
     }
+    if (!question.createdBy.equals(userId)) {
+      return res.status(403).json({ error: "Forbidden: bạn không có quyền xóa câu hỏi này" });
+    }
 
-    console.log(`Question deleted successfully. ID: ${id}, Text: ${deletedQuestion.questionText}`);
+    await Question.findByIdAndDelete(id);
+    console.log(`Question deleted successfully. ID: ${id}, Text: ${question.questionText}`);
     res.json({ message: "Xóa câu hỏi thành công!" });
   } catch (err) {
     console.error("Error while deleting question:", err);

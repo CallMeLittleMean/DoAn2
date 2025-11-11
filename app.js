@@ -180,9 +180,16 @@ app.put("/api/profile/:userId", upload.single("avatar"), async (req, res) => {
 });
 
 app.get("/api/questions", async (req, res) => {
-  const userId = getRequestingUserId(req);
-  if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
   try {
+    // If client asks for all questions (used for running quiz), return everything
+    if (String(req.query.all) === 'true') {
+      const questions = await Question.find().sort({ createdAt: -1 });
+      return res.json(questions);
+    }
+
+    // otherwise require requester identity and return only their questions
+    const userId = getRequestingUserId(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized: missing user id" });
     const questions = await Question.find({ createdBy: userId }).sort({ createdAt: -1 });
     res.json(questions);
   } catch (err) {

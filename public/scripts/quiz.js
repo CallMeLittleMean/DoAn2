@@ -76,7 +76,8 @@
       }
 
       function loadQuiz() {
-        fetch(`/api/questions`, { headers: { 'x-user-id': userId } })
+        // Request all questions for the quiz mode
+        fetch(`/api/questions?all=true`)
           .then((res) => res.json())
           .then((data) => {
             const requested = parseInt(localStorage.getItem('numQuestions') || '0', 10) || 0;

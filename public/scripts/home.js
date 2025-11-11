@@ -77,7 +77,8 @@ const userId = localStorage.getItem("userId");
           return;
         }
         try {
-          const res = await fetch(`/api/questions`, { headers: { 'x-user-id': userId } });
+          // When starting a quiz, validate against the full question pool
+          const res = await fetch(`/api/questions?all=true`);
           if (!res.ok) throw new Error('Network response was not ok');
           const data = await res.json();
           if (!Array.isArray(data)) throw new Error('Invalid response');

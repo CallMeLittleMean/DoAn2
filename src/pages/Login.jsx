@@ -38,8 +38,10 @@ export default function Login(){
         <div id="error-msg" className="error">{error}</div>
         <input id="username" type="text" placeholder="Tên đăng nhập" value={username} onChange={e=>setUsername(e.target.value)} />
         <input id="password" type="password" placeholder="Mật khẩu" value={password} onChange={e=>setPassword(e.target.value)} />
-        <button onClick={submit}>Đăng nhập</button>
-        <button onClick={()=>setShowRegister(true)} style={{marginTop:8,background:'#ef4444'}}>Đăng ký</button>
+        <div className="login-actions">
+          <button className="primary" onClick={submit}>Đăng nhập</button>
+          <button className="secondary" onClick={()=>setShowRegister(true)}>Đăng ký</button>
+        </div>
       </div>
 
       {/* Register modal (UI only) */}

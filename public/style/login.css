@@ -12,16 +12,52 @@
   padding: 32px;
   border-radius: 16px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 340px;
+  width: 500px;
+  max-width: calc(100% - 48px);
   text-align: center;
   animation: fadeIn 0.5s ease-in-out;
+  box-sizing: border-box;
 }
 @keyframes fadeIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 h2 { margin-bottom: 20px; color: #333; }
 input[type="text"], input[type="password"] {
-  width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px;
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 15px;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.08);
+}
+select {
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
 }
 button { width: 100%; padding: 12px; margin-top: 12px; background-color: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; }
 button:hover { background-color: #43a047; }
-.error { color: red; margin-top: 10px; font-size: 14px; }
+/* button variants */
+.login-actions { display:flex; flex-direction:column; gap:14px; margin-top:20px; }
+.login-actions .primary { background-color: #4caf50; padding: 14px 18px; font-size: 16px; border-radius: 10px; width:100%; }
+.login-actions .primary:hover { background-color: #43a047; }
+.login-actions .secondary { background-color: #4caf50; padding: 14px 18px; font-size: 16px; border-radius: 10px; width:100%; }
+.login-actions .secondary:hover { background-color: #43a047; }
+
+/* keep stacked layout on small screens as well */
+@media (max-width: 540px) {
+  .login-actions { flex-direction: column; }
+}
+.error { color: red; margin-top: 10px; font-size: 14px; text-align: center; }
+
+@media (max-width: 540px) {
+  .login-container { width: calc(100% - 32px); padding: 20px; }
+}

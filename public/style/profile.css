@@ -1,7 +1,7 @@
 .profile-body {
   font-family: 'Segoe UI', Tahoma, sans-serif;
   background: linear-gradient(to right, #a1ffce, #faffd1);
-  margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh;
+  margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh;
 }
 .profile-container { background-color: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15); animation: fadeIn 0.5s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -16,3 +16,22 @@
 .save-btn:hover { background-color: #43a047; }
 .cancel-btn { background-color: #9e9e9e; }
 .cancel-btn:hover { background-color: #757575; }
+
+/* style selects consistently */
+select {
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+/* stronger override for select padding across app pages (prevents resets from removing padding) */
+.login-body select,
+.home-body select,
+.add-question-body select,
+.quiz-body select,
+.profile-body select {
+  padding: 10px !important;
+  box-sizing: border-box !important;
+}

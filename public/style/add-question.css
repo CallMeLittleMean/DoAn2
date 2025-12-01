@@ -27,3 +27,12 @@
 .switch .slider::after { content: ''; position:absolute; top:3px; left:3px; width:20px; height:20px; background:white; border-radius:50%; transition:all .2s; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
 .switch input:checked + .slider { background: #16a34a !important; }
 .switch input:checked + .slider::after { transform: translateX(22px); }
+
+/* ensure select elements have comfortable padding */
+select {
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}

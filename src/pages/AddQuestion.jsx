@@ -61,6 +61,22 @@ export default function AddQuestion(){
     if(modal) modal.classList.remove('hidden')
   }
 
+  function handleTypeChange(newType){
+    setType(newType)
+    if(newType === 'multiple_choice'){
+      // ensure we have 4 option slots when switching to MCQ
+      if(options.length < 4){
+        const padded = options.slice()
+        while(padded.length < 4) padded.push('')
+        setOptions(padded)
+      }
+      if(!['A','B','C','D'].includes(correct)) setCorrect('A')
+    } else {
+      // switch to true/false: ensure correct is 'true' or 'false'
+      if(correct !== 'true' && correct !== 'false') setCorrect('true')
+    }
+  }
+
   function closeEditModal(){
     setEditingQuestion(null)
     const modal = document.getElementById('edit-modal')
@@ -123,7 +139,7 @@ export default function AddQuestion(){
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Loại câu hỏi</label>
-              <select id="questionType" value={type} onChange={e=>setType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <select id="questionType" value={type} onChange={e=>handleTypeChange(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
                 <option value="true_false">Đúng / Sai</option>
                 <option value="multiple_choice">4 lựa chọn</option>
               </select>
@@ -189,7 +205,7 @@ export default function AddQuestion(){
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Loại</label>
-            <select value={type} onChange={e=>setType(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+            <select value={type} onChange={e=>handleTypeChange(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
               <option value="true_false">Đúng / Sai</option>
               <option value="multiple_choice">4 lựa chọn</option>
             </select>

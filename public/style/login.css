@@ -1,8 +1,7 @@
-body {
+.login-body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(to right, #c9ffbf, #ffafbd);
   margin: 0;
-  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;

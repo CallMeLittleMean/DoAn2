@@ -1,4 +1,4 @@
-body {
+.home-body {
   font-family: 'Segoe UI', Tahoma, sans-serif;
   background: linear-gradient(to right, #a1ffce, #faffd1);
   margin: 0;
@@ -54,7 +54,8 @@ body {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #4caf50;
-  margin-bottom: 15px;
+  margin: 0 auto 15px;
+  display: block;
 }
 
 .info {
